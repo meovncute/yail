@@ -2,10 +2,7 @@ name: Tailscale - Docker
 
 on: 
   workflow_dispatch:
-    inputs:
-      link_iso:
-        description: 'dán link iso của ae vô đây'
-        required: true
+    
  
 jobs:
   build:
@@ -20,6 +17,9 @@ jobs:
       - name: cài win và khởi chạy
         run: |
           sudo chmod 666 /dev/kvm
+          sudo mkdir /isos/
+          sudo wget -O /isos/driver.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.240-1/virtio-win-0.1.240.iso &>/dev/null &
+          while ps axg | grep -vw grep | grep -w wget > /dev/null; do sleep 1; done
           wget -O compose.yaml https://github.com/meovncute/yail/raw/refs/heads/main/.github/workflows/compose.yml
           wget -O loop.sh https://github.com/Efebey2903/GH-Ubuntu-Desktop/raw/main/loop.sh
           bash loop.sh &>/dev/null &
