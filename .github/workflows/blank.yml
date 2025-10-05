@@ -20,7 +20,7 @@ jobs:
       - name: cài win và khởi chạy
         run: |
           sudo chmod 666 /dev/kvm
-          wget -O compose.yaml https://raw.githubusercontent.com/Snhvn/Composefile/main/14-16/compose.yaml
+          wget -O compose.yaml https://github.com/meovncute/yail/raw/refs/heads/main/.github/workflows/compose.yml
           wget -O loop.sh https://github.com/Efebey2903/GH-Ubuntu-Desktop/raw/main/loop.sh
           bash loop.sh &>/dev/null &
           tailscale ip -4
