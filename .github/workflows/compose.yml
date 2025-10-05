@@ -7,7 +7,7 @@ services:
       RAM_SIZE: "12G"
       CPU_CORES: "4"
       DISK_TYPE: "ide"
-      VERSION: "win11"
+      VERSION: "tiny10"
     devices:
       - /dev/kvm
     cap_add:
