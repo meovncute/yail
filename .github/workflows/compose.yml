@@ -3,7 +3,7 @@ services:
     image: dockurr/windows
     container_name: windows
     environment:
-      DISK_SIZE: "128G"
+      DISK_SIZE: "40G"
       RAM_SIZE: "12G"
       CPU_CORES: "4"
       DISK_TYPE: "ide"
