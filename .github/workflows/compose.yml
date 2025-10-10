@@ -4,7 +4,7 @@ services:
     container_name: windows
     environment:
       DISK_SIZE: "40G"
-      RAM_SIZE: "12G"
+      RAM_SIZE: "15G"
       CPU_CORES: "4"
       DISK_TYPE: "ide"
       VERSION: "tiny11"
