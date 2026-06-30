@@ -8,7 +8,8 @@ services:
       CPU_CORES: "4"
       DISK_TYPE: "ide"
       VERSION: "11"
-      ARGUMENTS: "-drive file=/driver.iso,media=cdrom"
+      environment:
+      ARGUMENTS: "-drive file=/driver.iso,media=cdrom -drive file=/vb.iso,media=cdrom"
     devices:
       - /dev/kvm
     cap_add:
@@ -22,4 +23,5 @@ services:
     volumes:
       - /mnt:/storage
       - /isos/driver.iso:/driver.iso
+      - /isos/vb.iso:/vb.iso
     stop_grace_period: 2m
