@@ -3,9 +3,9 @@ services:
     image: dockurr/windows
     container_name: windows
     environment:
-      DISK_SIZE: "62G"
-      RAM_SIZE: "13G"
-      CPU_CORES: "4"
+      DISK_SIZE: "50G"
+      RAM_SIZE: "10G"
+      CPU_CORES: "3"
       DISK_TYPE: "ide"
       VERSION: "11"
       environment:
