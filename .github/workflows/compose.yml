@@ -7,7 +7,7 @@ services:
       RAM_SIZE: "10G"
       CPU_CORES: "3"
       DISK_TYPE: "ide"
-      VERSION: "11"
+      VERSION: "11l"
       environment:
       ARGUMENTS: "-drive file=/driver.iso,media=cdrom -drive file=/vb.iso,media=cdrom"
     devices:
