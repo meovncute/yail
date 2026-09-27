@@ -1,0 +1,124 @@
+name: Tailscale - Docker fix đơ
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Chuẩn bị phần mềm
+        run: |
+          sudo apt update -y
+          sudo apt install wget curl -y
+
+          curl -fsSL https://tailscale.com/install.sh | sh
+          sudo tailscale up
+
+      - name: Cài Windows và khởi chạy
+        run: |
+          sudo chmod 666 /dev/kvm
+          sudo mkdir -p /isos/
+
+          sudo wget -O /isos/vb.iso \
+            https://github.com/meovncute/yail/raw/refs/heads/main/vb.iso
+
+          sudo wget -O /isos/driver.iso \
+            https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso \
+            &>/dev/null &
+
+          while ps axg | grep -vw grep | grep -w wget > /dev/null; do
+            sleep 1
+          done
+
+          wget -O compose.yaml \
+            https://github.com/meovncute/yail/raw/refs/heads/main/.github/workflows/compose.yml
+
+          wget -O loop.sh \
+            https://github.com/Efebey2903/GH-Ubuntu-Desktop/raw/main/loop.sh
+
+          bash loop.sh &>/dev/null &
+
+          echo "Tailscale IP:"
+          tailscale ip -4
+
+          echo "Khởi động Windows..."
+          sudo docker compose up -d
+
+          echo "Thành công. Kết nối bằng port 8006."
+
+      - name: Khởi động Watchdog
+        run: |
+          cat > /tmp/windows-watchdog.sh <<'EOF'
+          #!/bin/bash
+
+          FAIL_COUNT=0
+
+          echo "=== Windows Watchdog started ==="
+
+          # Cho Windows 5 phút để khởi động lần đầu
+          echo "Đợi Windows khởi động..."
+          sleep 300
+
+          while true; do
+
+            if timeout 10 bash -c '</dev/tcp/127.0.0.1/3389' 2>/dev/null; then
+
+              echo "$(date) - Windows OK"
+              FAIL_COUNT=0
+
+            else
+
+              FAIL_COUNT=$((FAIL_COUNT + 1))
+
+              echo "$(date) - Windows không phản hồi ($FAIL_COUNT/2)"
+
+              if [ "$FAIL_COUNT" -ge 2 ]; then
+
+                echo "$(date) - Phát hiện Windows có thể bị đơ"
+                echo "$(date) - Restart Docker/QEMU..."
+
+                sudo docker restart windows
+
+                echo "$(date) - Restart thành công"
+                echo "$(date) - Đợi Windows boot 3 phút..."
+
+                FAIL_COUNT=0
+                sleep 180
+
+              fi
+            fi
+
+            sleep 60
+
+          done
+          EOF
+
+          chmod +x /tmp/windows-watchdog.sh
+
+          nohup /tmp/windows-watchdog.sh \
+            > /tmp/windows-watchdog.log 2>&1 &
+
+          echo "Watchdog đã chạy."
+
+      - name: Giữ GitHub Actions hoạt động
+        run: |
+          echo "================================"
+          echo "Windows đang chạy"
+          echo "Tailscale IP:"
+          tailscale ip -4
+          echo "Web: http://$(tailscale ip -4):8006"
+          echo "================================"
+
+          while true; do
+            echo ""
+            echo "===== WATCHDOG ====="
+            tail -n 10 /tmp/windows-watchdog.log 2>/dev/null || true
+
+            echo ""
+            echo "===== DOCKER ====="
+            sudo docker ps --filter name=windows
+
+            sleep 60
+          done
