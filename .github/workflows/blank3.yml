@@ -1,0 +1,103 @@
+
+name: 2 Tailscale - Docker fix đơ
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Chuẩn bị Tailscale và Dropbear
+        run: |
+          sudo apt update -y
+          sudo apt install -y wget curl dropbear
+
+          curl -fsSL https://tailscale.com/install.sh | sh
+          sudo tailscale up
+
+          echo "Khởi động Dropbear..."
+          sudo dropbear -p 22
+
+          echo "===== TAILSCALE IP ====="
+          tailscale ip -4
+
+          echo "===== DROPBEAR ====="
+          sudo ss -lntp | grep ':22'
+
+      - name: Cài Windows và khởi chạy
+        run: |
+          sudo chmod 666 /dev/kvm
+          sudo mkdir -p /isos/
+
+          sudo wget -O /isos/vb.iso \
+            https://github.com/meovncute/yail/raw/refs/heads/main/vb.iso
+
+          sudo wget -O /isos/driver.iso \
+            https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso \
+            &>/dev/null &
+
+          while ps axg | grep -vw grep | grep -w wget > /dev/null; do
+            sleep 1
+          done
+
+          wget -O compose.yaml \
+            https://github.com/meovncute/yail/raw/refs/heads/main/.github/workflows/compose.yml
+
+          wget -O loop.sh \
+            https://github.com/Efebey2903/GH-Ubuntu-Desktop/raw/main/loop.sh
+
+          bash loop.sh &>/dev/null &
+
+          echo "Tailscale IP:"
+          tailscale ip -4
+
+          echo "Khởi động Windows..."
+          sudo docker compose up -d
+
+          echo "Thành công. Kết nối bằng port 8006."
+
+      - name: Tạo file res.sh
+        run: |
+          cat > res.sh <<'EOF'
+          #!/bin/bash
+
+          echo "================================"
+          echo "   RESTART WINDOWS DOCKER"
+          echo "================================"
+
+          sudo docker restart windows
+
+          echo ""
+          echo "===== DOCKER STATUS ====="
+          sudo docker ps --filter name=windows
+
+          echo "Hoàn tất!"
+          EOF
+
+          chmod +x res.sh
+
+          echo "Đã tạo res.sh thành công."
+
+      - name: Giữ GitHub Actions hoạt động
+        run: |
+          echo "================================"
+          echo "Windows đang chạy"
+          echo "Tailscale IP:"
+          tailscale ip -4
+          echo "Dropbear SSH: port 22"
+          echo "Web: http://$(tailscale ip -4):8006"
+          echo "================================"
+
+          while true; do
+            echo ""
+            echo "===== DROPBEAR ====="
+            sudo ss -lntp | grep ':22' || true
+
+            echo ""
+            echo "===== DOCKER ====="
+            sudo docker ps --filter name=windows
+
+            sleep 60
+          done
