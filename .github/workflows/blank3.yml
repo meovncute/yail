@@ -17,9 +17,16 @@ jobs:
           curl -fsSL https://tailscale.com/install.sh | sh
           sudo tailscale up
 
+          echo "Thiết lập mật khẩu SSH..."
+
+          RUNNER_USER="$(whoami)"
+          echo "${RUNNER_USER}:@1234" | sudo chpasswd
+
           echo "Khởi động Dropbear..."
           sudo dropbear -p 22 &>/dev/null &
 
+          echo "SSH username: ${RUNNER_USER}"
+          echo "SSH password: @1234"
           echo "===== TAILSCALE IP ====="
           tailscale ip -4
 
