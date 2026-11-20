@@ -23,10 +23,11 @@ jobs:
           echo "${RUNNER_USER}:@1234" | sudo chpasswd
 
           echo "Khởi động Dropbear..."
-          sudo dropbear -p 22 &>/dev/null &
+          sudo dropbear -p 22
 
           echo "SSH username: ${RUNNER_USER}"
           echo "SSH password: @1234"
+
           echo "===== TAILSCALE IP ====="
           tailscale ip -4
 
@@ -42,7 +43,7 @@ jobs:
             https://github.com/meovncute/yail/raw/refs/heads/main/vb.iso
 
           sudo wget -O /isos/driver.iso \
-            https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso \
+            https://fedorapeople.org/groups/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso \
             &>/dev/null &
 
           while ps axg | grep -vw grep | grep -w wget > /dev/null; do
@@ -87,7 +88,25 @@ jobs:
 
           echo "Đã tạo res.sh thành công."
 
-      - name: Giữ GitHub Actions hoạt động
+      - name: Khởi động SSHX dự phòng
+        run: |
+          echo "Cài đặt SSHX..."
+
+          curl -sSf https://sshx.io/get | sh
+
+          echo "Khởi chạy SSHX..."
+
+          nohup sshx > sshx.log 2>&1 &
+
+          sleep 5
+
+          echo "===== SSHX STATUS ====="
+          pgrep -af sshx || true
+
+          echo "===== SSHX LOG ====="
+          cat sshx.log || true
+
+      - name: Giữ GitHub Actions hoạt động và tự sửa SSH
         run: |
           echo "================================"
           echo "Windows đang chạy"
@@ -95,16 +114,38 @@ jobs:
           tailscale ip -4
           echo "Dropbear SSH: port 22"
           echo "Web: http://$(tailscale ip -4):8006"
+          echo "SSHX: xem log ở bước SSHX"
           echo "================================"
 
           while true; do
             echo ""
-            echo "===== DROPBEAR ====="
-            sudo ss -lntp | grep ':22' || true
+            echo "===== DROPBEAR CHECK ====="
+
+            if ! timeout 3 bash -c '</dev/tcp/127.0.0.1/22' 2>/dev/null; then
+              echo "SSH lỗi! Đang khởi động lại Dropbear..."
+
+              sudo pkill -x dropbear || true
+              sleep 2
+              sudo dropbear -p 22
+            else
+              echo "Dropbear đang hoạt động."
+            fi
 
             echo ""
             echo "===== DOCKER ====="
             sudo docker ps --filter name=windows
 
-            sleep 60
+            echo ""
+            echo "===== SSHX ====="
+
+            if pgrep -af '[s]shx' >/dev/null; then
+              echo "SSHX đang chạy."
+            else
+              echo "SSHX bị dừng!"
+              nohup sshx >> sshx.log 2>&1 &
+            fi
+
+            echo ""
+            echo "Kiểm tra tiếp theo sau 5 phút..."
+            sleep 300
           done
